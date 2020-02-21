@@ -31,21 +31,18 @@ public class SzuelkeProject extends Application {
 
     //member status
     Label mStatus;
+    Board Board;
     
     @Override
     public void start(Stage primaryStage) {
-        Button btn = new Button();
-        btn.setText("Say 'Hello World'");
-        btn.setOnAction((ActionEvent event) -> {
-            setStatus("Hello World!");
-        });
-        btn.prefWidthProperty().bind(primaryStage.widthProperty().divide(2));
+        Board = new Board();
         BorderPane root = new BorderPane();
-        root.setCenter(btn);
+        root.setCenter(Board);
+        Board.drawBoard();
         //add the menus
         root.setTop(buildMenuBar());
         //add mStatus
-        mStatus = new Label("Everything is Copacetic");
+        mStatus = new Label("New Game");
         ToolBar toolBar = new ToolBar(mStatus);
         root.setBottom(toolBar);
         Scene scene = new Scene(root, 300, 250);
