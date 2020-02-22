@@ -19,6 +19,7 @@ import javafx.scene.control.ToolBar;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -45,10 +46,11 @@ public class SzuelkeProject extends Application {
         mStatus = new Label("New Game");
         ToolBar toolBar = new ToolBar(mStatus);
         root.setBottom(toolBar);
-        Scene scene = new Scene(root, 300, 250);
+        Scene scene = new Scene(root, 600, 500);
 
         primaryStage.setTitle("Hello World!");
         primaryStage.setScene(scene);
+        scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> Board.keyPressed(e));
         primaryStage.show();
     }
 

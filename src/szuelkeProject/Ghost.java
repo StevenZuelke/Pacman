@@ -27,6 +27,8 @@ public class Ghost{
         this.Player= player;
         this.I = i;
         this.J = j;
+        this.Direction = 0;
+        this.Step = 0;
     }
     
 }
