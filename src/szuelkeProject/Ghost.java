@@ -93,7 +93,6 @@ public class Ghost{
                     if(nextInd < 0) nextInd = 20+nextInd;
                     if(Board.Maze[nextInd][J] == 1){
                         cont = true;
-                        I = nextInd;
                     }
                     break;
             }

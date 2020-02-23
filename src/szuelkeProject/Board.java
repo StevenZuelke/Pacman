@@ -37,7 +37,7 @@ public class Board extends Region{
     public void playerDirectionChange(KeyEvent e){
         Ghost player = getPlayer();
         int prevDirection = player.Direction;
-        if(player.Step == 3){ //If player decides to turn and almost in next square give it to them
+        if(player.Step == 3 || player.Step == 2){ //If player decides to turn and almost in next square give it to them
             player.Step = 4;
             player.checkSteps();
         }
@@ -106,11 +106,10 @@ public class Board extends Region{
         }
         else{
             double elapsed = (now-PreviousTime);
-            double elapsecond = elapsed/1000.0;
             if(elapsed>50.0){
                 for(Ghost g : Ghosts){
                     long deltaT = now - g.PrevMoveTime;
-                    double tNeed = 250.0 / g.Speed;
+                    double tNeed = 125.0 / g.Speed;
                     int steps = (int) (deltaT / tNeed);
                     if(g.Moving) g.Step += steps;
                     if(steps > 0) g.PrevMoveTime = now;
