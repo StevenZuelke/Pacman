@@ -5,6 +5,7 @@
  */
 package szuelkeProject;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -33,9 +34,18 @@ public class SzuelkeProject extends Application {
     //member status
     Label mStatus;
     Board Board;
+    AnimationTimer Timer;
+    Boolean Paused = false;
     
     @Override
     public void start(Stage primaryStage) {
+        Timer = new AnimationTimer(){
+            @Override
+            public void handle(long now){
+                onTimer(now);
+            }
+        };
+        
         Board = new Board();
         BorderPane root = new BorderPane();
         root.setCenter(Board);
@@ -52,8 +62,12 @@ public class SzuelkeProject extends Application {
         primaryStage.setScene(scene);
         scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> Board.keyPressed(e));
         primaryStage.show();
+        Timer.start();
     }
 
+    private void onTimer(long now){
+        Board.onTimer(now, Paused);
+    }
     private void onAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About");

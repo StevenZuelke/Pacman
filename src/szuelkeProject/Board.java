@@ -21,8 +21,10 @@ import javafx.scene.paint.Color;
  */
 public class Board extends Region{
     int[][] Board = new int[20][20];
+    static int[][] Maze = new int[20][20];
     Canvas Canvas;
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
+    long PreviousTime = System.currentTimeMillis();
     
     public void keyPressed(KeyEvent e){
         if(e.getCode() == KeyCode.RIGHT){
@@ -34,6 +36,26 @@ public class Board extends Region{
         draw();
     }
     
+    public void onTimer(long now, Boolean paused){
+        now = System.currentTimeMillis();
+        if(paused) PreviousTime = now;
+        else{
+            double elapsed = (now-PreviousTime);
+            double elapsecond = elapsed/1000.0;
+            if(elapsed>50.0){
+                for(Ghost g : Ghosts){
+                    long deltaT = now - g.PrevMoveTime;
+                    double tNeed = 250.0 / g.Speed;
+                    int steps = (int) (deltaT / tNeed);
+                    if(g.Moving) g.Step += steps;
+                    if(steps > 0) g.PrevMoveTime = now;
+                    g.checkSteps();
+                }
+                draw();
+                PreviousTime = System.currentTimeMillis();
+            }
+        } 
+    }
     public void draw(){
         initCanvas();
         drawBoard();
@@ -143,38 +165,48 @@ public class Board extends Region{
     public Board(){
         Canvas = new Canvas(this.getWidth(),this.getHeight());
         this.getChildren().add(Canvas);
-        Ghosts.add(new Ghost(true, 10, 1, 1));
-        Ghosts.get(0).Direction = 0;
-        Ghosts.get(0).Step = 0;
+        Ghosts.add(new Ghost(false, .75, 1, 1));
+        Ghosts.get(0).Moving = true;
+        Ghosts.add(new Ghost(false, .75, 18, 18));
+        Ghosts.get(1).Moving = true;
+        Ghosts.add(new Ghost(false, .75, 1, 18));
+        Ghosts.get(2).Moving = true;
         //Fill in hardcoded Board with 2 to represent there is a dot or 0 for wall
         for(int i = 0; i < 20; i++){
             for(int j = 0; j < 20; j++){
                 if(i == 1 || i == 18 || j == 1 || j == 18){
                     //end rows get dots
                     Board[i][j] = 2;
+                    Maze[i][j] = 1;
                 }else if((i == 9 && (j == 0 || j == 19))
                         || (j == 9 && (i == 0 || i == 19))){
                     //Middle shortcuts get dots
                     Board[i][j] = 2;
+                    Maze[i][j] = 1;
                 }else if(((i == 5 || i == 13) && (j == 2 || j == 17))
                         || ((j == 5 || j == 13) && (i == 2 || i == 17))){
                     //Inward path gets dots
                     Board[i][j] = 2;
+                    Maze[i][j] = 1;
                 }else if((i >= 5 && i<= 13 && (j == 3 || j == 16)) 
                         || (j >= 5 && j<= 13 && (i == 3 || i == 16))){
                     //Inward hallways get dots
                     Board[i][j] = 2;
+                    Maze[i][j] = 1;
                 }else if((i == 9 && j >= 4 && j <= 15) 
                         || (j == 9 && i >= 4 && i <= 15)){
                     //Middle cross gets dots
                     Board[i][j] = 2;
+                    Maze[i][j] = 1;
                 }else if(((i == 6 || i == 12) && (j >= 6 && j <= 12))
                         ||((j == 6 || j == 12) && (i >= 6 && i <= 12)) ){
                     //Middle square gets dots
                     Board[i][j] = 2;
+                    Maze[i][j] = 1;
                 }else{
                     //Everywhere else gets walls
                     Board[i][j] = 0;
+                    Maze[i][j] = 0;
                 }
             }
         }
