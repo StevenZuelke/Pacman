@@ -34,13 +34,14 @@ public class Board extends Region{
     Canvas Canvas;
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
     long PreviousTime = System.currentTimeMillis();
-    SimpleBooleanProperty Death = new SimpleBooleanProperty();
+    SimpleIntegerProperty Dead = new SimpleIntegerProperty();
     SimpleIntegerProperty Score = new SimpleIntegerProperty();
     SimpleStringProperty ScoreString = new SimpleStringProperty();
     SimpleIntegerProperty CakesLeft = new SimpleIntegerProperty();
     SimpleStringProperty CakeString = new SimpleStringProperty();
     
     public Board(int level){
+        CakesLeft.set(1);
         ChangeListener changeListener = new ChangeListener<Integer>(){
             @Override
             public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
@@ -52,7 +53,7 @@ public class Board extends Region{
         CakesLeft.addListener(changeListener);
         Score.addListener(changeListener);
         Score.set(0);
-        Death.set(false);
+        Dead.set(0);
         Canvas = new Canvas(this.getWidth(),this.getHeight());
         this.getChildren().add(Canvas);
         this.addEventHandler(KeyEvent.KEY_PRESSED, e -> keyPressed(e));
@@ -82,11 +83,22 @@ public class Board extends Region{
     }
     
     private void cheat(){
+        ArrayList<Integer[]> list = new ArrayList<Integer[]>();
+        Integer[] inds;
         for(int i = 0; i < 20; i++){
             for(int j = 0; j < 20; j++){
-                if(!(i == 18 && j == 19) && Board[i][j] == 2) Board[i][j] = 1;
+                if(Board[i][j] == 2) {
+                    inds = new Integer[2];
+                    inds[0] = i;
+                    inds[1] = j;
+                    list.add(inds);
+                }
             }
         }
+        for(int i = 0; i < list.size() - 1; i++) {
+             Board[list.get(i)[0]][list.get(i)[1]] = 1;
+        }
+        CakesLeft.set(1);
     }
     
     public void checkDeath(){
@@ -380,7 +392,7 @@ public class Board extends Region{
     }
     
     public void gameOver(){
-        Death.set(true);
+        Dead.set(1);
         cheat();
     }
     
@@ -471,6 +483,10 @@ public class Board extends Region{
             player.Moving = false;
             player.Step = 0;
         }
+    }
+    
+    public void levelOver(){
+        
     }
     
     public void propertyChanged(){

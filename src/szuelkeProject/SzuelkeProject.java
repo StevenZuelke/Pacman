@@ -15,9 +15,12 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -59,14 +62,29 @@ public class SzuelkeProject extends Application {
                 onTimer(now);
             }
         };
+        ChangeListener winListener = new ChangeListener<Integer>(){
+            @Override
+            public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
+                win();
+            }
+        };
+        ChangeListener loseListener = new ChangeListener<Integer>(){
+            @Override
+            public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
+                lose();
+            }
+        };
         Board = new Board(1);
         newHandler();
+        Board.Dead.addListener(loseListener);
         //GameDisplay
-        SimpleIntegerProperty levelNum = new SimpleIntegerProperty();
         Label lvlLabel = new Label("Level: " );
         lvlLabel.textProperty().bind(Board.LvlString);
         Label scoreLabel = new Label("Score: " );
         scoreLabel.textProperty().bind(Board.ScoreString);
+        SimpleIntegerProperty cakesleft = new SimpleIntegerProperty();
+        cakesleft.bind(Board.CakesLeft);
+        cakesleft.addListener(winListener);
         Label cakesLabel = new Label("Cakes Left: ");
         cakesLabel.textProperty().bind(Board.CakeString);
         Vbox = new VBox();
@@ -86,6 +104,35 @@ public class SzuelkeProject extends Application {
         scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> pauseGo(e));
         Stage.show();
         Timer.start();
+    }
+    
+    private void lose(){
+        if(Board.Dead.get() != 1) return;
+        pauseHandler();
+        Alert alert = new Alert(AlertType.WARNING);
+        alert.setTitle("You Suck!");
+        alert.setContentText("You got killed by an evil ghost");
+        Platform.runLater(() -> alert.showAndWait());
+        newHandler();
+    }
+    
+    private void win(){
+        if(Board.CakesLeft.get() != 0) return;
+        pauseHandler();
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("You Beat the Level!");
+        alert.setContentText("Congratulations! (Press anyhing to continue)");
+        Platform.runLater(() -> alert.showAndWait());
+        setupLevelTwo();
+    }
+    
+    private void setupLevelTwo(){
+        Board.Ghosts.clear();
+        Board.resetBoard();
+        Board.Level.set(2);
+        Board.addGhosts(4, 1);
+        Board.addPlayer();
+        Board.draw();
     }
     
     private void readBoard(SavableBoard sboard){
@@ -145,12 +192,12 @@ public class SzuelkeProject extends Application {
     }
     
     private void newHandler(){
+        Board.Ghosts.clear();
         Board.resetBoard();
         Board.Score.set(0);
-        Board.Ghosts.clear();
         Board.addGhosts(2, .5);
         Board.addPlayer();
-        Board.Death.set(false);
+        Board.Dead.set(0);
         Paused = true;
         Board.draw();
     }
