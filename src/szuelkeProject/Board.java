@@ -7,8 +7,12 @@ package szuelkeProject;
 
 import java.util.ArrayList;
 import java.util.Random;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
@@ -26,14 +30,27 @@ public class Board extends Region{
     int[][] Board = new int[20][20];
     static int[][] Maze = new int[20][20];
     SimpleIntegerProperty Level = new SimpleIntegerProperty();
+    SimpleStringProperty LvlString = new SimpleStringProperty();
     Canvas Canvas;
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
     long PreviousTime = System.currentTimeMillis();
     SimpleBooleanProperty Death = new SimpleBooleanProperty();
     SimpleIntegerProperty Score = new SimpleIntegerProperty();
+    SimpleStringProperty ScoreString = new SimpleStringProperty();
+    SimpleIntegerProperty CakesLeft = new SimpleIntegerProperty();
+    SimpleStringProperty CakeString = new SimpleStringProperty();
     
     public Board(int level){
+        ChangeListener changeListener = new ChangeListener<Integer>(){
+            @Override
+            public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
+                propertyChanged();
+            }
+        };
+        Level.addListener(changeListener);
         Level.set(level);
+        CakesLeft.addListener(changeListener);
+        Score.addListener(changeListener);
         Score.set(0);
         Death.set(false);
         Canvas = new Canvas(this.getWidth(),this.getHeight());
@@ -222,23 +239,28 @@ public class Board extends Region{
         if(jR < 0) jR = 19;
         if(jR > 19) jR = 0;
         if(Board[g.I][g.J] == 2){
-            Score.add(1);
+            Score.set(Score.get() + 1);
+            CakesLeft.set(CakesLeft.get() - 1);
             Board[g.I][g.J] = 1;
         }
         if(g.Direction == 0 && g.Step == 3 && Board[g.I][jL] == 2){ //Dot above
-            Score.add(1);
+            CakesLeft.set(CakesLeft.get() - 1);
+            Score.set(Score.get() + 1);
             Board[g.I][jL] = 1;
         }
         if(g.Direction == 1 && g.Step == 3 && Board[iR][g.J] == 2){ //Dot Right
-            Score.add(1);
+            CakesLeft.set(CakesLeft.get() - 1);
+            Score.set(Score.get() + 1);
             Board[iR][g.J] = 1;
         }
         if(g.Direction == 2 && g.Step == 3 && Board[g.I][jR] == 2){ //Dot Below
-            Score.add(1);
+            CakesLeft.set(CakesLeft.get() - 1);
+            Score.set(Score.get() + 1);
             Board[g.I][jR] = 1;
         }
         if(g.Direction == 3 && g.Step == 3 && Board[jL][g.J] == 2){ //Dot Left
-            Score.add(1);
+            CakesLeft.set(CakesLeft.get() - 1);
+            Score.set(Score.get() + 1);
             Board[iL][g.J] = 1;
         }
     }
@@ -451,36 +473,49 @@ public class Board extends Region{
         }
     }
     
+    public void propertyChanged(){
+        ScoreString.set("Score: " + Score.get());
+        LvlString.set("Level: " + Level.get());
+        CakeString.set("Cakes Left: " + CakesLeft.get());
+    }
+    
     public void resetBoard(){
+        CakesLeft.set(0);
         for(int i = 0; i < 20; i++){
             for(int j = 0; j < 20; j++){
                 if(i == 1 || i == 18 || j == 1 || j == 18){
                     //end rows get dots
+                    CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
                     Maze[i][j] = 1;
                 }else if((i == 9 && (j == 0 || j == 19))
                         || (j == 9 && (i == 0 || i == 19))){
                     //Middle shortcuts get dots
+                    CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
                     Maze[i][j] = 1;
                 }else if(((i == 5 || i == 13) && (j == 2 || j == 17))
                         || ((j == 5 || j == 13) && (i == 2 || i == 17))){
                     //Inward path gets dots
+                    CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
                     Maze[i][j] = 1;
                 }else if((i >= 5 && i<= 13 && (j == 3 || j == 16)) 
                         || (j >= 5 && j<= 13 && (i == 3 || i == 16))){
                     //Inward hallways get dots
+                    CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
                     Maze[i][j] = 1;
                 }else if((i == 9 && j >= 4 && j <= 15) 
                         || (j == 9 && i >= 4 && i <= 15)){
                     //Middle cross gets dots
+                    CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
                     Maze[i][j] = 1;
                 }else if(((i == 6 || i == 12) && (j >= 6 && j <= 12))
                         ||((j == 6 || j == 12) && (i >= 6 && i <= 12)) ){
                     //Middle square gets dots
+                    CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
                     Maze[i][j] = 1;
                 }else{
@@ -491,4 +526,5 @@ public class Board extends Region{
             }
         }
     }
+    
 }

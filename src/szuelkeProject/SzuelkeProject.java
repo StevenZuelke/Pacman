@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -29,7 +30,9 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -46,6 +49,7 @@ public class SzuelkeProject extends Application {
     Boolean Paused = true;
     MenuItem Pause, Go, Save, Open, Settings;
     Stage Stage;
+    VBox Vbox;
     
     @Override
     public void start(Stage primaryStage) {
@@ -56,15 +60,24 @@ public class SzuelkeProject extends Application {
             }
         };
         Board = new Board(1);
-        Board.addPlayer();
-        Board.addGhosts(2, .5);
+        newHandler();
+        //GameDisplay
+        SimpleIntegerProperty levelNum = new SimpleIntegerProperty();
+        Label lvlLabel = new Label("Level: " );
+        lvlLabel.textProperty().bind(Board.LvlString);
+        Label scoreLabel = new Label("Score: " );
+        scoreLabel.textProperty().bind(Board.ScoreString);
+        Label cakesLabel = new Label("Cakes Left: ");
+        cakesLabel.textProperty().bind(Board.CakeString);
+        Vbox = new VBox();
+        Vbox.getChildren().addAll(lvlLabel, Board, scoreLabel);
+        VBox.setVgrow(Board, Priority.ALWAYS);
         BorderPane root = new BorderPane();
-        root.setCenter(Board);
+        root.setCenter(Vbox);
         //add the menus
         root.setTop(buildMenuBar());
-        //add mStatus
-        mStatus = new Label("New Game");
-        ToolBar toolBar = new ToolBar(mStatus);
+        //Cakes on the status bar
+        ToolBar toolBar = new ToolBar(cakesLabel);
         root.setBottom(toolBar);
         Scene scene = new Scene(root, 600, 500);
         Stage = primaryStage;
@@ -215,9 +228,6 @@ public class SzuelkeProject extends Application {
         return menuBar;
     }
 
-    private void setStatus(String status){
-        mStatus.setText(status);
-    }
     /**
      * @param args the command line arguments
      */
