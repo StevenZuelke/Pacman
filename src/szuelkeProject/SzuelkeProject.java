@@ -92,6 +92,8 @@ public class SzuelkeProject extends Application {
     private void goHandler(){
         Paused = false;
         Go.setDisable(true);
+        Save.setDisable(true);
+        Open.setDisable(true);
         Pause.setDisable(false);
     }
     
@@ -99,6 +101,8 @@ public class SzuelkeProject extends Application {
         Paused = true;
         Pause.setDisable(true);
         Go.setDisable(false);
+        Save.setDisable(false);
+        Open.setDisable(false);
     }
     
     private void settingsHandler(){

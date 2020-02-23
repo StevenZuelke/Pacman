@@ -26,11 +26,13 @@ public class Board extends Region{
     Canvas Canvas;
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
     long PreviousTime = System.currentTimeMillis();
+    Boolean Death = false;
     
     public void keyPressed(KeyEvent e){
         if(e.getCode() == KeyCode.UP || e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.DOWN){
          playerDirectionChange(e);  
         }
+        if(e.getCode() == KeyCode.HOME) cheat();
         draw();
     }
     
@@ -38,7 +40,7 @@ public class Board extends Region{
         Ghost player = getPlayer();
         int prevDirection = player.Direction;
         if(player.Step == 3 || player.Step == 2){ //If player decides to turn and almost in next square give it to them
-            player.Step = 4;
+            player.Step = 4; 
             player.checkSteps();
         }
         if(e.getCode() == KeyCode.UP){
@@ -59,6 +61,145 @@ public class Board extends Region{
            
             player.Moving = false;
             player.Step = 0;
+        }
+    }
+    
+    public void gameOver(){
+        cheat();
+    }
+    
+    public void checkDeath(){
+        Ghost player = getPlayer();
+        switch(player.Direction){
+            case(0):
+                for(Ghost g : Ghosts){
+                    if(g != player){
+                        if(player.I == g.I){
+                            if(player.Step > 1){ //Hits a ghost just above
+                                if(player.J == g.J + 1 && !(g.Direction == 0 && g.Step > 1)){
+                                   gameOver(); 
+                                   return;
+                                }
+                            }
+                            if(player.J == g.J){ //Hits a ghost on it
+                                gameOver();
+                                return;
+                            }
+                            if(player.J == g.J -1 && g.Direction == 0 && g.Step > 1){ // Hits a ghost below
+                                gameOver();
+                                return;
+                            }
+                        }
+                        if(player.J == g.J){
+                            if(player.I == g.I + 1 && g.Direction == 3 && g.Step > 1){ //Hits a ghost on the right
+                                gameOver();
+                                return;
+                            }
+                            if(player.I == g.I - 1 && g.Direction == 1 && g.Step > 1){ //Hits a ghost on the left
+                                gameOver();
+                                return;
+                            }
+                        }
+                    }
+                }
+                break;
+            case(1):
+                for(Ghost g : Ghosts){
+                    if(g != player){
+                        if(player.J == g.J){
+                            if(player.Step > 1){
+                                if(player.I == g.I - 1 && !(g.Direction == 1 && g.Step > 1)){
+                                   gameOver(); 
+                                   return;
+                                }
+                            }
+                            if(player.I == g.I){
+                                gameOver();
+                                return;
+                            }
+                            if(player.I == g.I + 1 && g.Direction == 1 && g.Step > 1){
+                                gameOver();
+                                return;
+                            }
+                        }
+                        if(player.I == g.I){
+                            if(player.J == g.J + 1 && g.Direction == 2 && g.Step > 1){ 
+                                gameOver();
+                                return;
+                            }
+                            if(player.J == g.J - 1 && g.Direction == 0 && g.Step > 1){
+                                gameOver();
+                                return;
+                            }
+                        }
+                    }
+                }
+                break;
+            case(2):
+                for(Ghost g : Ghosts){
+                    if(g != player){
+                        if(player.I == g.I){
+                            if(player.Step > 1){
+                                if(player.J == g.J - 1 && !(g.Direction == 2 && g.Step > 1)){
+                                   gameOver(); 
+                                   return;
+                                }
+                            }
+                            if(player.J == g.J){
+                                gameOver();
+                                return;
+                            }
+                            if(player.J == g.J + 1 && g.Direction == 2 && g.Step > 1){
+                                gameOver();
+                                return;
+                            }
+                        }
+                        if(player.J == g.J){
+                            if(player.I == g.I + 1 && g.Direction == 3 && g.Step > 1){ 
+                                gameOver();
+                                return;
+                            }
+                            if(player.I == g.I - 1 && g.Direction == 1 && g.Step > 1){
+                                gameOver();
+                                return;
+                            }
+                        }
+                    }
+                }
+                break;
+            case(3):
+                for(Ghost g : Ghosts){
+                    if(g != player){
+                        if(player.J == g.J){
+                            if(player.Step > 1){
+                                if(player.I == g.I + 1 && !(g.Direction == 3 && g.Step > 1)){
+                                   gameOver(); 
+                                   return;
+                                }
+                            }
+                            if(player.I == g.I){
+                                gameOver();
+                                return;
+                            }
+                            if(player.I == g.I - 1 && g.Direction == 0 && g.Step > 1){
+                                gameOver();
+                                return;
+                            }
+                        }
+                        if(player.I == g.I){
+                            if(player.J == g.J + 1 && g.Direction == 2 && g.Step > 1){ 
+                                gameOver();
+                                return;
+                            }
+                            if(player.J == g.J - 1 && g.Direction == 0 && g.Step > 1){
+                                gameOver();
+                                return;
+                            }
+                        }
+                    }
+                }
+                break;
+            
         }
     }
     
@@ -116,10 +257,20 @@ public class Board extends Region{
                     g.checkSteps();
                 }
                 draw();
+                checkDeath();
                 PreviousTime = System.currentTimeMillis();
             }
         } 
     }
+    
+    private void cheat(){
+        for(int i = 0; i < 20; i++){
+            for(int j = 0; j < 20; j++){
+                if(!(i == 18 && j == 19) && Board[i][j] == 2) Board[i][j] = 1;
+            }
+        }
+    }
+    
     public void draw(){ //draw everything  
         initCanvas();
         drawBoard();
