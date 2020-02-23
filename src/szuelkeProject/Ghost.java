@@ -5,6 +5,7 @@
  */
 package szuelkeProject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 import javafx.scene.canvas.Canvas;
@@ -14,7 +15,7 @@ import javafx.scene.canvas.Canvas;
  *
  * @author StevenZuelke
  */
-public class Ghost{
+public class Ghost implements Serializable{
     
     double Speed;
     //Is this the player or a ghost
@@ -25,6 +26,17 @@ public class Ghost{
     long PrevMoveTime;
     int I; //X index on board
     int J; //Y index on board
+    
+    public Ghost(Boolean player, double speed, int i, int j){
+        this.Speed = speed;
+        this.Player= player;
+        this.I = i;
+        this.J = j;
+        this.Direction = 0;
+        this.Step = 0;
+        this.Moving = false;
+        this.PrevMoveTime = System.currentTimeMillis();
+    }
     
     public void changeDirection(int prevDir){
         ArrayList<Integer> list = new ArrayList();
@@ -106,15 +118,6 @@ public class Ghost{
         }
     }
     
-    public Ghost(Boolean player, double speed, int i, int j){
-        this.Speed = speed;
-        this.Player= player;
-        this.I = i;
-        this.J = j;
-        this.Direction = 0;
-        this.Step = 0;
-        this.Moving = false;
-        this.PrevMoveTime = System.currentTimeMillis();
-    }
+    
     
 }

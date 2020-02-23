@@ -7,6 +7,8 @@ package szuelkeProject;
 
 import java.util.ArrayList;
 import java.util.Random;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
@@ -23,49 +25,51 @@ import javafx.scene.paint.Color;
 public class Board extends Region{
     int[][] Board = new int[20][20];
     static int[][] Maze = new int[20][20];
+    SimpleIntegerProperty Level = new SimpleIntegerProperty();
     Canvas Canvas;
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
     long PreviousTime = System.currentTimeMillis();
-    Boolean Death = false;
+    SimpleBooleanProperty Death = new SimpleBooleanProperty();
+    SimpleIntegerProperty Score = new SimpleIntegerProperty();
     
-    public void keyPressed(KeyEvent e){
-        if(e.getCode() == KeyCode.UP || e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.DOWN){
-         playerDirectionChange(e);  
-        }
-        if(e.getCode() == KeyCode.HOME) cheat();
-        draw();
+    public Board(int level){
+        Level.set(level);
+        Score.set(0);
+        Death.set(false);
+        Canvas = new Canvas(this.getWidth(),this.getHeight());
+        this.getChildren().add(Canvas);
+        this.addEventHandler(KeyEvent.KEY_PRESSED, e -> keyPressed(e));
+        //Fill in hardcoded Board with 2 to represent there is a dot or 0 for wall
+        resetBoard();
     }
     
-    public void playerDirectionChange(KeyEvent e){
-        Ghost player = getPlayer();
-        int prevDirection = player.Direction;
-        if(player.Step == 3 || player.Step == 2){ //If player decides to turn and almost in next square give it to them
-            player.Step = 4; 
-            player.checkSteps();
-        }
-        if(e.getCode() == KeyCode.UP){
-            player.Direction = 0;
-        }
-        if(e.getCode() == KeyCode.RIGHT){
-            player.Direction = 1;
-        }
-        if(e.getCode() == KeyCode.DOWN){
-            player.Direction = 2;
-        }
-        if(e.getCode() == KeyCode.LEFT){
-            player.Direction = 3;
-        }
-        if(checkNextSpace(player)){
-            player.Moving = true;
-        }else{
-           
-            player.Moving = false;
-            player.Step = 0;
+    public void addGhosts(int numGhosts, double speed){ //Fill the nonplayer Ghosts in
+        ArrayList<Integer[]> takenSpots = new ArrayList<Integer[]>();
+        Integer[] ints = new Integer[2];
+        for(int i = 0; i < numGhosts; i++){
+            ints[0] = (new Random()).nextInt(20);
+            ints[1] = (new Random()).nextInt(20);
+            while(takenSpots.contains(ints) || Board[ints[0]][ints[1]] == 0 //So Ghost is not in same spot as another, Ghost is not in a wall
+                    || ((ints[0] == 9 && ints[1] < 16 && ints[1] > 3) || (ints[1] == 9 && ints[0] < 16 && ints[0] > 3))){ //Dont spawn ghosts in center area by the player spawn 
+                ints[0] = (new Random()).nextInt(20);
+                ints[1] = (new Random()).nextInt(20);
+            }
+            Ghost g = new Ghost(false, speed, ints[0], ints[1]);
+            g.changeDirection(4);//any direction to start moving
+            Ghosts.add(g);
         }
     }
     
-    public void gameOver(){
-        cheat();
+    public void addPlayer(){
+        Ghosts.add(new Ghost(true, 1, 9, 9));
+    }
+    
+    private void cheat(){
+        for(int i = 0; i < 20; i++){
+            for(int j = 0; j < 20; j++){
+                if(!(i == 18 && j == 19) && Board[i][j] == 2) Board[i][j] = 1;
+            }
+        }
     }
     
     public void checkDeath(){
@@ -203,6 +207,42 @@ public class Board extends Region{
         }
     }
     
+    public void checkDots(){
+        Ghost g = getPlayer();
+        int iL = g.I-1;
+        int iR = g.I+1;
+        int jL = g.J-1;
+        int jR = g.J+1;
+        if(iL < 0) iL = 19;
+        if(iL > 19) iL = 0;
+        if(iR < 0) iR = 19;
+        if(iR > 19) iR = 0;
+        if(jL < 0) jL = 19;
+        if(jL > 19) jL = 0;
+        if(jR < 0) jR = 19;
+        if(jR > 19) jR = 0;
+        if(Board[g.I][g.J] == 2){
+            Score.add(1);
+            Board[g.I][g.J] = 1;
+        }
+        if(g.Direction == 0 && g.Step == 3 && Board[g.I][jL] == 2){ //Dot above
+            Score.add(1);
+            Board[g.I][jL] = 1;
+        }
+        if(g.Direction == 1 && g.Step == 3 && Board[iR][g.J] == 2){ //Dot Right
+            Score.add(1);
+            Board[iR][g.J] = 1;
+        }
+        if(g.Direction == 2 && g.Step == 3 && Board[g.I][jR] == 2){ //Dot Below
+            Score.add(1);
+            Board[g.I][jR] = 1;
+        }
+        if(g.Direction == 3 && g.Step == 3 && Board[jL][g.J] == 2){ //Dot Left
+            Score.add(1);
+            Board[iL][g.J] = 1;
+        }
+    }
+    
     public Boolean checkNextSpace(Ghost g){
         Boolean clear = false;
         int nextInd = 0;
@@ -239,44 +279,31 @@ public class Board extends Region{
         return clear;
     }
     
-    public void onTimer(long now, Boolean paused){
-        now = System.currentTimeMillis();
-        if(paused) {
-            PreviousTime = now;
-            for(Ghost g : Ghosts) g.PrevMoveTime = now;
-        }
-        else{
-            double elapsed = (now-PreviousTime);
-            if(elapsed>50.0){
-                for(Ghost g : Ghosts){
-                    long deltaT = now - g.PrevMoveTime;
-                    double tNeed = 125.0 / g.Speed;
-                    int steps = (int) (deltaT / tNeed);
-                    if(g.Moving) g.Step += steps;
-                    if(steps > 0) g.PrevMoveTime = now;
-                    g.checkSteps();
-                }
-                draw();
-                checkDeath();
-                PreviousTime = System.currentTimeMillis();
-            }
-        } 
-    }
-    
-    private void cheat(){
-        for(int i = 0; i < 20; i++){
-            for(int j = 0; j < 20; j++){
-                if(!(i == 18 && j == 19) && Board[i][j] == 2) Board[i][j] = 1;
-            }
-        }
-    }
-    
-    public void draw(){ //draw everything  
+     public void draw(){ //draw everything  
         initCanvas();
         drawBoard();
         drawGhosts();
     }
     
+     public void drawBoard(){ //Draw the board according to the array
+        GraphicsContext g = Canvas.getGraphicsContext2D();
+        g.save();       
+        double width = Canvas.getWidth()/20.0;
+        for(int i = 0; i < 20; i++){
+            for(int j = 0; j < 20; j++){
+                if(Board[i][j] == 0) g.setFill(Color.BLACK);
+                else g.setFill(Color.CHOCOLATE);
+                g.fillRect(width*(double)i, width*(double)j, width, width);
+                if(Board[i][j] == 2){
+                    //Fill dots
+                    g.setFill(Color.WHEAT);
+                    g.fillOval(width*i+width/4, width*j+width/4, width/2, width/2);
+                }
+            }
+        }
+        g.restore();
+    }
+     
     public void drawGhosts(){
         //Puts ghost at specified index in the board
         double width = Canvas.getWidth()/20.0;
@@ -330,29 +357,9 @@ public class Board extends Region{
         gc.restore();
     }
     
-    public void drawBoard(){ //Draw the board according to the array
-        GraphicsContext g = Canvas.getGraphicsContext2D();
-        g.save();       
-        double width = Canvas.getWidth()/20.0;
-        for(int i = 0; i < 20; i++){
-            for(int j = 0; j < 20; j++){
-                if(Board[i][j] == 0) g.setFill(Color.BLACK);
-                else g.setFill(Color.CHOCOLATE);
-                g.fillRect(width*(double)i, width*(double)j, width, width);
-                if(Board[i][j] == 2){
-                    //Fill dots
-                    g.setFill(Color.WHEAT);
-                    g.fillOval(width*i+width/4, width*j+width/4, width/2, width/2);
-                }
-            }
-        }
-        g.restore();
-    }
-    
-    public void initCanvas(){ //Clear canvas
-        GraphicsContext g = Canvas.getGraphicsContext2D();
-        g.setFill(Color.WHITE);
-        g.fillRect(0,0,Canvas.getWidth(),Canvas.getHeight());
+    public void gameOver(){
+        Death.set(true);
+        cheat();
     }
     
     public Ghost getPlayer(){ //Find the ghost that is the player
@@ -362,25 +369,18 @@ public class Board extends Region{
         return null;
     }
     
-    public void addGhosts(int numGhosts, double speed){ //Fill the nonplayer Ghosts in
-        ArrayList<Integer[]> takenSpots = new ArrayList<Integer[]>();
-        Integer[] ints = new Integer[2];
-        for(int i = 0; i < numGhosts; i++){
-            ints[0] = (new Random()).nextInt(20);
-            ints[1] = (new Random()).nextInt(20);
-            while(takenSpots.contains(ints) || Board[ints[0]][ints[1]] == 0 //So Ghost is not in same spot as another, Ghost is not in a wall
-                    && !((ints[0] == 9 && ints[1] < 16 && ints[1] > 3) || (ints[1] == 9 && ints[0] < 16 && ints[0] > 3))){ //Dont spawn ghosts in center area by the player spawn 
-                ints[0] = (new Random()).nextInt(20);
-                ints[1] = (new Random()).nextInt(20);
-            }
-            Ghost g = new Ghost(false, speed, ints[0], ints[1]);
-            g.changeDirection(4);//any direction to start moving
-            Ghosts.add(g);
-        }
+     public void initCanvas(){ //Clear canvas
+        GraphicsContext g = Canvas.getGraphicsContext2D();
+        g.setFill(Color.WHITE);
+        g.fillRect(0,0,Canvas.getWidth(),Canvas.getHeight());
     }
     
-    public void addPlayer(){
-        Ghosts.add(new Ghost(true, 1, 9, 9));
+    public void keyPressed(KeyEvent e){
+        if(e.getCode() == KeyCode.UP || e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.DOWN){
+         playerDirectionChange(e);  
+        }
+        if(e.getCode() == KeyCode.HOME) cheat();
+        draw();
     }
     
     @Override
@@ -397,11 +397,61 @@ public class Board extends Region{
         draw();
     }
     
-    public Board(){
-        Canvas = new Canvas(this.getWidth(),this.getHeight());
-        this.getChildren().add(Canvas);
-        this.addEventHandler(KeyEvent.KEY_PRESSED, e -> keyPressed(e));
-        //Fill in hardcoded Board with 2 to represent there is a dot or 0 for wall
+    public void onTimer(long now, Boolean paused){
+        now = System.currentTimeMillis();
+        if(paused) {
+            PreviousTime = now;
+            for(Ghost g : Ghosts) g.PrevMoveTime = now;
+        }
+        else{
+            double elapsed = (now-PreviousTime);
+            if(elapsed>50.0){
+                for(Ghost g : Ghosts){
+                    long deltaT = now - g.PrevMoveTime;
+                    double tNeed = 125.0 / g.Speed;
+                    int steps = (int) (deltaT / tNeed);
+                    if(g.Moving) g.Step += steps;
+                    if(steps > 0) g.PrevMoveTime = now;
+                    g.checkSteps();
+                }
+                draw();
+                checkDeath();
+                checkDots();
+                PreviousTime = System.currentTimeMillis();
+            }
+        } 
+    }
+    
+    public void playerDirectionChange(KeyEvent e){
+        Ghost player = getPlayer();
+        int prevDirection = player.Direction;
+        if(player.Step == 3 || player.Step == 2){ //If player decides to turn and almost in next square give it to them
+            player.Step = 4; 
+            player.checkSteps();
+        }
+        if(e.getCode() == KeyCode.UP){
+            player.Direction = 0;
+        }
+        if(e.getCode() == KeyCode.RIGHT){
+            player.Direction = 1;
+        }
+        if(e.getCode() == KeyCode.DOWN){
+            player.Direction = 2;
+        }
+        if(e.getCode() == KeyCode.LEFT){
+            player.Direction = 3;
+        }
+        if(prevDirection == (player.Direction + 2) % 4) player.Step = 0;
+        if(checkNextSpace(player)){
+            player.Moving = true;
+        }else{
+           
+            player.Moving = false;
+            player.Step = 0;
+        }
+    }
+    
+    public void resetBoard(){
         for(int i = 0; i < 20; i++){
             for(int j = 0; j < 20; j++){
                 if(i == 1 || i == 18 || j == 1 || j == 18){
@@ -441,5 +491,4 @@ public class Board extends Region{
             }
         }
     }
-    
 }

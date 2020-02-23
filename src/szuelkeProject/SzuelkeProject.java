@@ -5,6 +5,12 @@
  */
 package szuelkeProject;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -24,6 +30,7 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 /**
@@ -38,6 +45,7 @@ public class SzuelkeProject extends Application {
     AnimationTimer Timer;
     Boolean Paused = true;
     MenuItem Pause, Go, Save, Open, Settings;
+    Stage Stage;
     
     @Override
     public void start(Stage primaryStage) {
@@ -47,13 +55,11 @@ public class SzuelkeProject extends Application {
                 onTimer(now);
             }
         };
-        
-        Board = new Board();
+        Board = new Board(1);
         Board.addPlayer();
         Board.addGhosts(2, .5);
         BorderPane root = new BorderPane();
         root.setCenter(Board);
-        Board.drawBoard();
         //add the menus
         root.setTop(buildMenuBar());
         //add mStatus
@@ -61,24 +67,79 @@ public class SzuelkeProject extends Application {
         ToolBar toolBar = new ToolBar(mStatus);
         root.setBottom(toolBar);
         Scene scene = new Scene(root, 600, 500);
-
-        primaryStage.setTitle("Hello World!");
-        primaryStage.setScene(scene);
+        Stage = primaryStage;
+        Stage.setTitle("Slab Game");
+        Stage.setScene(scene);
         scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> pauseGo(e));
-        primaryStage.show();
+        Stage.show();
         Timer.start();
     }
     
+    private void readBoard(SavableBoard sboard){
+        Board.Board = sboard.Board;
+        Board.Score.set(sboard.Score);
+        Board.Ghosts = sboard.Ghosts;
+        Board.Level.set(sboard.Level);
+        Board.draw();
+    }
+    
     private void openHandler(){
-        
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open");
+        fileChooser.setInitialDirectory(new File("."));
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("Game Files", "*.slab"),
+            new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+        File selectedFile = fileChooser.showOpenDialog(Stage);
+        if(selectedFile == null){
+            return;
+        }
+        try{
+            FileInputStream fileInput = new FileInputStream(selectedFile);
+            ObjectInputStream objInput = new ObjectInputStream(fileInput);
+            SavableBoard openBoard = (SavableBoard) objInput.readObject();
+            readBoard(openBoard);
+        }catch(Exception e){
+            e.printStackTrace();
+            return;
+        }
     }
     
     private void saveHandler(){
+        //SaveAs
+        File selectedFile = null;
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save As");
+        fileChooser.setInitialDirectory(new File("."));
+        fileChooser.getExtensionFilters().addAll(  
+            new FileChooser.ExtensionFilter("Game Files", "*.slab"),
+            new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+        selectedFile = fileChooser.showSaveDialog(Stage);
         
+        if(selectedFile != null){
+            try{
+                //Save File Here  
+                FileOutputStream fileStream = new FileOutputStream(selectedFile);
+                ObjectOutputStream objStream = new ObjectOutputStream(fileStream);
+                objStream.writeObject(new SavableBoard(Board));
+            }catch(Exception e){
+                e.printStackTrace();
+                return;
+            }
+        }
     }
     
     private void newHandler(){
-        
+        Board.resetBoard();
+        Board.Score.set(0);
+        Board.Ghosts.clear();
+        Board.addGhosts(2, .5);
+        Board.addPlayer();
+        Board.Death.set(false);
+        Paused = true;
+        Board.draw();
     }
     
     private void pauseGo(KeyEvent e)
