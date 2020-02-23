@@ -100,7 +100,10 @@ public class Board extends Region{
     
     public void onTimer(long now, Boolean paused){
         now = System.currentTimeMillis();
-        if(paused) PreviousTime = now;
+        if(paused) {
+            PreviousTime = now;
+            for(Ghost g : Ghosts) g.PrevMoveTime = now;
+        }
         else{
             double elapsed = (now-PreviousTime);
             double elapsecond = elapsed/1000.0;

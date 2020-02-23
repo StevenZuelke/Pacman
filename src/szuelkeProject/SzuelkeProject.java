@@ -16,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.ToolBar;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -35,7 +36,8 @@ public class SzuelkeProject extends Application {
     Label mStatus;
     Board Board;
     AnimationTimer Timer;
-    Boolean Paused = false;
+    Boolean Paused = true;
+    MenuItem Pause, Go, Save, Open, Settings;
     
     @Override
     public void start(Stage primaryStage) {
@@ -62,14 +64,51 @@ public class SzuelkeProject extends Application {
 
         primaryStage.setTitle("Hello World!");
         primaryStage.setScene(scene);
-        scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> Board.keyPressed(e));
+        scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> pauseGo(e));
         primaryStage.show();
         Timer.start();
     }
-
+    
+    private void openHandler(){
+        
+    }
+    
+    private void saveHandler(){
+        
+    }
+    
+    private void newHandler(){
+        
+    }
+    
+    private void pauseGo(KeyEvent e)
+    {
+        if(e.getCode() == KeyCode.SPACE){
+            if(Paused) goHandler();
+            else pauseHandler();
+        }else Board.keyPressed(e);
+    }
+    
+    private void goHandler(){
+        Paused = false;
+        Go.setDisable(true);
+        Pause.setDisable(false);
+    }
+    
+    private void pauseHandler(){
+        Paused = true;
+        Pause.setDisable(true);
+        Go.setDisable(false);
+    }
+    
+    private void settingsHandler(){
+        
+    }
+    
     private void onTimer(long now){
         Board.onTimer(now, Paused);
     }
+    
     private void onAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About");
@@ -82,17 +121,32 @@ public class SzuelkeProject extends Application {
         MenuBar menuBar = new MenuBar();
         // File menu with just a quit item for now
         Menu fileMenu = new Menu("_File");
+        Open = new MenuItem("Open");
+        Open.setOnAction(e -> openHandler());
+        Save = new MenuItem("Save");
+        Save.setOnAction(e -> saveHandler());
         MenuItem quitMenuItem = new MenuItem("_Quit");
         quitMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.Q,
                 KeyCombination.CONTROL_DOWN));
         quitMenuItem.setOnAction(actionEvent -> Platform.exit());
-        fileMenu.getItems().add(quitMenuItem);
+        fileMenu.getItems().addAll(Open, Save, quitMenuItem);
+        //Game menu with new pause go and settings
+        Menu gameMenu = new Menu("Game");
+        MenuItem newMenuItem = new MenuItem("New");
+        newMenuItem.setOnAction(e -> newHandler());
+        Go = new MenuItem("Go");
+        Go.setOnAction(e -> goHandler());
+        Pause = new MenuItem("Pause");
+        Pause.setOnAction(e -> pauseHandler());
+        Settings = new MenuItem("Settings");
+        Settings.setOnAction(e -> settingsHandler());
+        gameMenu.getItems().addAll(newMenuItem,(new SeparatorMenuItem()), Go, Pause, Settings);
         // Help menu with just an about item for now
         Menu helpMenu = new Menu("_Help");
         MenuItem aboutMenuItem = new MenuItem("_About");
         aboutMenuItem.setOnAction(actionEvent -> onAbout());
         helpMenu.getItems().add(aboutMenuItem);
-        menuBar.getMenus().addAll(fileMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, gameMenu, helpMenu);
         return menuBar;
     }
 
