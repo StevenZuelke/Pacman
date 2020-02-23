@@ -47,6 +47,8 @@ public class SzuelkeProject extends Application {
         };
         
         Board = new Board();
+        Board.addPlayer();
+        Board.addGhosts(2, .5);
         BorderPane root = new BorderPane();
         root.setCenter(Board);
         Board.drawBoard();

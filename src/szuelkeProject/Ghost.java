@@ -30,24 +30,6 @@ public class Ghost{
         ArrayList<Integer> list = new ArrayList();
         int nextInd = 0;
         int iL, iR, jL, jR;
-        /*
-        if(Direction == 0){
-            nextInd = J-1;
-            if(nextInd < 0) nextInd = 19;
-        }
-        if(Direction == 1){
-            nextInd = I+1;
-            if(nextInd > 19) nextInd = 0;
-        }
-        if(Direction == 2){
-            nextInd = J+1;
-            if(nextInd > 19) nextInd = 0;
-        }
-        if(Direction == 3){
-            nextInd = I-1;
-            if(nextInd < 0) nextInd = 19;
-        }
-        */
         iL = I-1;
         iR = I+1;
         jL = J-1;
