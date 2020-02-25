@@ -35,13 +35,21 @@ public class Board extends Region{
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
     long PreviousTime = System.currentTimeMillis();
     SimpleIntegerProperty Dead = new SimpleIntegerProperty();
+    SimpleIntegerProperty Win = new SimpleIntegerProperty();
     SimpleIntegerProperty Score = new SimpleIntegerProperty();
     SimpleStringProperty ScoreString = new SimpleStringProperty();
     SimpleIntegerProperty CakesLeft = new SimpleIntegerProperty();
     SimpleStringProperty CakeString = new SimpleStringProperty();
+    Boolean Paused;
+    int CakesPrev = 0;
     
     public Board(int level){
         CakesLeft.set(1);
+        Win.set(0);
+        Dead.set(0);
+        Dead.addListener(e -> gameOver());
+        CakesLeft.addListener(e -> levelOver());
+        Paused = true;
         ChangeListener changeListener = new ChangeListener<Integer>(){
             @Override
             public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
@@ -51,9 +59,8 @@ public class Board extends Region{
         Level.addListener(changeListener);
         Level.set(level);
         CakesLeft.addListener(changeListener);
-        Score.addListener(changeListener);
         Score.set(0);
-        Dead.set(0);
+        Score.addListener(changeListener);
         Canvas = new Canvas(this.getWidth(),this.getHeight());
         this.getChildren().add(Canvas);
         this.addEventHandler(KeyEvent.KEY_PRESSED, e -> keyPressed(e));
@@ -393,7 +400,6 @@ public class Board extends Region{
     
     public void gameOver(){
         Dead.set(1);
-        cheat();
     }
     
     public Ghost getPlayer(){ //Find the ghost that is the player
@@ -431,9 +437,22 @@ public class Board extends Region{
         draw();
     }
     
-    public void onTimer(long now, Boolean paused){
+    public void newGame(){
+        Ghosts.clear();
+        Dead.set(0);
+        Win.set(0);
+        Score.set(0);
+        Level.set(1);
+        resetBoard();
+        addGhosts(2, .5);
+        addPlayer();
+        Paused = true;
+        draw();
+    }
+    
+    public void onTimer(long now){
         now = System.currentTimeMillis();
-        if(paused) {
+        if(Paused) {
             PreviousTime = now;
             for(Ghost g : Ghosts) g.PrevMoveTime = now;
         }
@@ -449,8 +468,8 @@ public class Board extends Region{
                     g.checkSteps();
                 }
                 draw();
-                checkDeath();
                 checkDots();
+                checkDeath();
                 PreviousTime = System.currentTimeMillis();
             }
         } 
@@ -486,13 +505,18 @@ public class Board extends Region{
     }
     
     public void levelOver(){
-        
+        System.out.println("LevelOver");
     }
     
     public void propertyChanged(){
         ScoreString.set("Score: " + Score.get());
         LvlString.set("Level: " + Level.get());
         CakeString.set("Cakes Left: " + CakesLeft.get());
+        if(CakesLeft.get() == 0 && CakesPrev == 1){
+            Win.set(1);
+            levelOver();
+        }
+        CakesPrev = CakesLeft.get();
     }
     
     public void resetBoard(){

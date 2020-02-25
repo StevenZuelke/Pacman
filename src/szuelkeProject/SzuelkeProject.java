@@ -49,7 +49,6 @@ public class SzuelkeProject extends Application {
     Label mStatus;
     Board Board;
     AnimationTimer Timer;
-    Boolean Paused = true;
     MenuItem Pause, Go, Save, Open, Settings;
     Stage Stage;
     VBox Vbox;
@@ -76,15 +75,11 @@ public class SzuelkeProject extends Application {
         };
         Board = new Board(1);
         newHandler();
-        Board.Dead.addListener(loseListener);
         //GameDisplay
         Label lvlLabel = new Label("Level: " );
         lvlLabel.textProperty().bind(Board.LvlString);
         Label scoreLabel = new Label("Score: " );
         scoreLabel.textProperty().bind(Board.ScoreString);
-        SimpleIntegerProperty cakesleft = new SimpleIntegerProperty();
-        cakesleft.bind(Board.CakesLeft);
-        cakesleft.addListener(winListener);
         Label cakesLabel = new Label("Cakes Left: ");
         cakesLabel.textProperty().bind(Board.CakeString);
         Vbox = new VBox();
@@ -104,6 +99,8 @@ public class SzuelkeProject extends Application {
         scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> pauseGo(e));
         Stage.show();
         Timer.start();
+        Board.Win.addListener(winListener);
+        Board.Dead.addListener(loseListener);
     }
     
     private void lose(){
@@ -117,7 +114,7 @@ public class SzuelkeProject extends Application {
     }
     
     private void win(){
-        if(Board.CakesLeft.get() != 0) return;
+        if(Board.Win.get() != 1) return;
         pauseHandler();
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("You Beat the Level!");
@@ -192,26 +189,19 @@ public class SzuelkeProject extends Application {
     }
     
     private void newHandler(){
-        Board.Ghosts.clear();
-        Board.resetBoard();
-        Board.Score.set(0);
-        Board.addGhosts(2, .5);
-        Board.addPlayer();
-        Board.Dead.set(0);
-        Paused = true;
-        Board.draw();
+        Board.newGame();
     }
     
     private void pauseGo(KeyEvent e)
     {
         if(e.getCode() == KeyCode.SPACE){
-            if(Paused) goHandler();
+            if(Board.Paused) goHandler();
             else pauseHandler();
         }else Board.keyPressed(e);
     }
     
     private void goHandler(){
-        Paused = false;
+        Board.Paused = false;
         Go.setDisable(true);
         Save.setDisable(true);
         Open.setDisable(true);
@@ -219,7 +209,7 @@ public class SzuelkeProject extends Application {
     }
     
     private void pauseHandler(){
-        Paused = true;
+        Board.Paused = true;
         Pause.setDisable(true);
         Go.setDisable(false);
         Save.setDisable(false);
@@ -231,7 +221,7 @@ public class SzuelkeProject extends Application {
     }
     
     private void onTimer(long now){
-        Board.onTimer(now, Paused);
+        Board.onTimer(now);
     }
     
     private void onAbout() {
