@@ -34,6 +34,7 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.ToolBar;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -101,8 +102,9 @@ public class SzuelkeProject extends Application {
         root.setBottom(toolBar);
         Scene scene = new Scene(root, 600, 500);
         Stage = primaryStage;
-        Stage.setTitle("Slab Game");
+        Stage.setTitle("SlabMan");
         Stage.setScene(scene);
+        Stage.getIcons().add(new Image("icon.png"));
         scene.addEventHandler(KeyEvent.KEY_PRESSED , e -> pauseGo(e));
         Stage.show();
         Timer.start();
@@ -116,6 +118,7 @@ public class SzuelkeProject extends Application {
         pauseHandler();
         Alert alert = new Alert(AlertType.WARNING);
         alert.setTitle("You Suck!");
+        alert.setHeaderText("You Suck!");
         alert.setContentText("You got killed by an evil ghost");
         Platform.runLater(() -> {
             alert.showAndWait();
