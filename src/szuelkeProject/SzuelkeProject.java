@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Optional;
+import java.util.prefs.Preferences;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -22,6 +24,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ChoiceDialog;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -33,6 +39,7 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -64,13 +71,13 @@ public class SzuelkeProject extends Application {
         ChangeListener winListener = new ChangeListener<Integer>(){
             @Override
             public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
-                win();
+                win(newValue);
             }
         };
         ChangeListener loseListener = new ChangeListener<Integer>(){
             @Override
             public synchronized void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue){
-                lose();
+                lose(newValue);
             }
         };
         Board = new Board(1);
@@ -103,40 +110,52 @@ public class SzuelkeProject extends Application {
         Board.Dead.addListener(loseListener);
     }
     
-    private void lose(){
-        if(Board.Dead.get() != 1) return;
+    private void lose(int newVal){
+        if(newVal != 1) return;
+        Board.Dead.set(0);
         pauseHandler();
         Alert alert = new Alert(AlertType.WARNING);
         alert.setTitle("You Suck!");
         alert.setContentText("You got killed by an evil ghost");
-        Platform.runLater(() -> alert.showAndWait());
-        newHandler();
+        Platform.runLater(() -> {
+            alert.showAndWait();
+            newHandler();
+                });
     }
     
-    private void win(){
-        if(Board.Win.get() != 1) return;
+    private void win(int newVal){
+        if(newVal != 1) return;
         pauseHandler();
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("You Beat the Level!");
-        alert.setContentText("Congratulations! (Press anyhing to continue)");
-        Platform.runLater(() -> alert.showAndWait());
-        setupLevelTwo();
+        if(Board.Level.get() == 1){
+            Alert alert = new Alert(AlertType.INFORMATION);
+            alert.setTitle("You Beat Level 1");
+            alert.setHeaderText("You Beat Level 1!");
+            alert.setContentText("Congratulations! (Press anyhing to continue)");
+            Platform.runLater(() -> alert.showAndWait());
+            Board.setupLevelTwo();
+        }else{
+            Alert alert = new Alert(AlertType.INFORMATION);
+            alert.setTitle("You Beat the game");
+            alert.setHeaderText("You Beat the Game!");
+            alert.setContentText("Congratulations! \n"
+                    + "You Scored: "+ Board.Score.get() +"\n(Press anyhing to continue)");
+            Platform.runLater(() -> alert.showAndWait());
+            newHandler();
+        }
+        
     }
     
-    private void setupLevelTwo(){
-        Board.Ghosts.clear();
-        Board.resetBoard();
-        Board.Level.set(2);
-        Board.addGhosts(4, 1);
-        Board.addPlayer();
-        Board.draw();
-    }
     
     private void readBoard(SavableBoard sboard){
         Board.Board = sboard.Board;
         Board.Score.set(sboard.Score);
         Board.Ghosts = sboard.Ghosts;
         Board.Level.set(sboard.Level);
+        Board.StartGhosts = sboard.StartGhosts;
+        Board.AddGhosts = sboard.AddGhosts;
+        Platform.runLater(()->Board.Prefs.putInt("StartGhosts", sboard.StartGhosts));
+        Platform.runLater(()->Board.Prefs.putInt("AddGhosts", sboard.AddGhosts));
+        Board.CakesLeft.set(sboard.CakesLeft);
         Board.draw();
     }
     
@@ -156,6 +175,7 @@ public class SzuelkeProject extends Application {
             FileInputStream fileInput = new FileInputStream(selectedFile);
             ObjectInputStream objInput = new ObjectInputStream(fileInput);
             SavableBoard openBoard = (SavableBoard) objInput.readObject();
+            //Platform.runLater(()->readBoard(openBoard));
             readBoard(openBoard);
         }catch(Exception e){
             e.printStackTrace();
@@ -217,6 +237,35 @@ public class SzuelkeProject extends Application {
     }
     
     private void settingsHandler(){
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        VBox vbox = new VBox();
+        HBox hboxtop = new HBox();
+        HBox hboxbot = new HBox();
+        ComboBox startCombo = new ComboBox();
+        ComboBox addCombo = new ComboBox();
+        startCombo.getItems().addAll(1, 2, 3, 4);
+        addCombo.getItems().addAll(1,2,3,4);
+        startCombo.setValue(Board.StartGhosts);
+        addCombo.setValue(Board.AddGhosts);
+        Label topLabel = new Label("Ghosts at level 1");
+        Label botLabel = new Label("Additional Ghosts on Level 2");
+        hboxtop.getChildren().addAll(startCombo, topLabel);
+        hboxbot.getChildren().addAll(addCombo, botLabel);
+        vbox.getChildren().addAll(hboxtop, hboxbot);
+        alert.setTitle("Settings");
+        alert.getDialogPane().setContent(vbox);
+        vbox.setPrefWidth(350);
+        Optional<ButtonType> result = alert.showAndWait();
+        //check the dropdowns for prefs
+        if(result.isPresent() && result.get() == ButtonType.OK){
+            if(startCombo.getValue() != null){
+                Platform.runLater(()->Board.Prefs.putInt("StartGhosts", (int) startCombo.getValue()));
+            }
+            if(addCombo.getValue() != null){
+                Platform.runLater(()->Board.Prefs.putInt("AddGhosts", (int) addCombo.getValue()));
+            }
+        }
+        
         
     }
     
@@ -227,7 +276,7 @@ public class SzuelkeProject extends Application {
     private void onAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About");
-        alert.setHeaderText("Steven Zuelke, CSCD 370 Lab Template, Wtr 2020");
+        alert.setHeaderText("Steven Zuelke, CSCD 370 SlabMan, Wtr 2020");
         alert.showAndWait();
     }
 
@@ -252,10 +301,11 @@ public class SzuelkeProject extends Application {
         Go = new MenuItem("Go");
         Go.setOnAction(e -> goHandler());
         Pause = new MenuItem("Pause");
+        Pause.setDisable(true);
         Pause.setOnAction(e -> pauseHandler());
         Settings = new MenuItem("Settings");
         Settings.setOnAction(e -> settingsHandler());
-        gameMenu.getItems().addAll(newMenuItem,(new SeparatorMenuItem()), Go, Pause, Settings);
+        gameMenu.getItems().addAll(newMenuItem,(new SeparatorMenuItem()), Go, Pause,(new SeparatorMenuItem()), Settings);
         // Help menu with just an about item for now
         Menu helpMenu = new Menu("_Help");
         MenuItem aboutMenuItem = new MenuItem("_About");

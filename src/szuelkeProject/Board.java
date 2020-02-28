@@ -7,6 +7,7 @@ package szuelkeProject;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.prefs.Preferences;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -20,6 +21,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
+import javafx.scene.media.AudioClip;
 import javafx.scene.paint.Color;
 
 /**
@@ -41,14 +43,23 @@ public class Board extends Region{
     SimpleIntegerProperty CakesLeft = new SimpleIntegerProperty();
     SimpleStringProperty CakeString = new SimpleStringProperty();
     Boolean Paused;
+    Boolean Started = false;
     int CakesPrev = 0;
+    Preferences Prefs;
+    int StartGhosts;
+    int AddGhosts;
+    AudioClip CakeSound = new AudioClip(getClass().getResource("cakesound.wav").toString());
+    AudioClip DeathSound = new AudioClip(getClass().getResource("deathsound.wav").toString());
+    AudioClip StartSound = new AudioClip(getClass().getResource("startsound.wav").toString());
     
     public Board(int level){
+        Prefs = Preferences.userNodeForPackage(getClass());
+        Prefs.addPreferenceChangeListener(e -> prefChange());
+        StartGhosts = Prefs.getInt("StartGhosts", 2);
+        AddGhosts = Prefs.getInt("AddGhosts", 2);
         CakesLeft.set(1);
         Win.set(0);
         Dead.set(0);
-        Dead.addListener(e -> gameOver());
-        CakesLeft.addListener(e -> levelOver());
         Paused = true;
         ChangeListener changeListener = new ChangeListener<Integer>(){
             @Override
@@ -56,16 +67,16 @@ public class Board extends Region{
                 propertyChanged();
             }
         };
-        Level.addListener(changeListener);
         Level.set(level);
-        CakesLeft.addListener(changeListener);
         Score.set(0);
-        Score.addListener(changeListener);
         Canvas = new Canvas(this.getWidth(),this.getHeight());
         this.getChildren().add(Canvas);
         this.addEventHandler(KeyEvent.KEY_PRESSED, e -> keyPressed(e));
         //Fill in hardcoded Board with 2 to represent there is a dot or 0 for wall
         resetBoard();
+        Score.addListener(changeListener);
+        CakesLeft.addListener(changeListener);
+        Level.addListener(changeListener);
     }
     
     public void addGhosts(int numGhosts, double speed){ //Fill the nonplayer Ghosts in
@@ -258,29 +269,34 @@ public class Board extends Region{
         if(jR < 0) jR = 19;
         if(jR > 19) jR = 0;
         if(Board[g.I][g.J] == 2){
+            CakeSound.play();
             Score.set(Score.get() + 1);
-            CakesLeft.set(CakesLeft.get() - 1);
             Board[g.I][g.J] = 1;
+            CakesLeft.set(CakesLeft.get() - 1);
         }
         if(g.Direction == 0 && g.Step == 3 && Board[g.I][jL] == 2){ //Dot above
-            CakesLeft.set(CakesLeft.get() - 1);
-            Score.set(Score.get() + 1);
+            CakeSound.play();
             Board[g.I][jL] = 1;
+            Score.set(Score.get() + 1);
+            CakesLeft.set(CakesLeft.get() - 1);
         }
         if(g.Direction == 1 && g.Step == 3 && Board[iR][g.J] == 2){ //Dot Right
-            CakesLeft.set(CakesLeft.get() - 1);
+            CakeSound.play();
             Score.set(Score.get() + 1);
             Board[iR][g.J] = 1;
+            CakesLeft.set(CakesLeft.get() - 1);
         }
         if(g.Direction == 2 && g.Step == 3 && Board[g.I][jR] == 2){ //Dot Below
-            CakesLeft.set(CakesLeft.get() - 1);
+            CakeSound.play();
             Score.set(Score.get() + 1);
             Board[g.I][jR] = 1;
+            CakesLeft.set(CakesLeft.get() - 1);
         }
         if(g.Direction == 3 && g.Step == 3 && Board[jL][g.J] == 2){ //Dot Left
-            CakesLeft.set(CakesLeft.get() - 1);
+            CakeSound.play();
             Score.set(Score.get() + 1);
             Board[iL][g.J] = 1;
+            CakesLeft.set(CakesLeft.get() - 1);
         }
     }
     
@@ -318,6 +334,16 @@ public class Board extends Region{
                 break;   
         }
         return clear;
+    }
+    
+    public void clearGhosts(){
+        for(int i = 0; i < Ghosts.size(); i++){
+            Ghost g = Ghosts.get(i);
+            if(g.Player == false) {
+                Ghosts.remove(g);
+                i--;
+            }
+        }
     }
     
      public void draw(){ //draw everything  
@@ -399,6 +425,7 @@ public class Board extends Region{
     }
     
     public void gameOver(){
+        DeathSound.play();
         Dead.set(1);
     }
     
@@ -438,15 +465,18 @@ public class Board extends Region{
     }
     
     public void newGame(){
+        StartSound.play();
+        Started = false;
+        Paused = true;
         Ghosts.clear();
         Dead.set(0);
         Win.set(0);
         Score.set(0);
         Level.set(1);
         resetBoard();
-        addGhosts(2, .5);
+        addGhosts(StartGhosts, .5);
         addPlayer();
-        Paused = true;
+        Started = true;
         draw();
     }
     
@@ -478,6 +508,13 @@ public class Board extends Region{
     public void playerDirectionChange(KeyEvent e){
         Ghost player = getPlayer();
         int prevDirection = player.Direction;
+        if(player.Moving){
+            if(e.getCode() == KeyCode.RIGHT && prevDirection == 1) return;
+            if(e.getCode() == KeyCode.LEFT && prevDirection == 3) return;
+            if(e.getCode() == KeyCode.UP && prevDirection == 0) return;
+            if(e.getCode() == KeyCode.DOWN && prevDirection == 2) return;
+        }
+        
         if(player.Step == 3 || player.Step == 2){ //If player decides to turn and almost in next square give it to them
             player.Step = 4; 
             player.checkSteps();
@@ -504,17 +541,29 @@ public class Board extends Region{
         }
     }
     
-    public void levelOver(){
-        System.out.println("LevelOver");
+    public void prefChange(){
+        StartGhosts = Prefs.getInt("StartGhosts", StartGhosts);
+        AddGhosts = Prefs.getInt("AddGhosts", AddGhosts);
+        if(Level.get() == 1){
+            if(Ghosts.size() - 1 != StartGhosts){
+                clearGhosts();
+                addGhosts(StartGhosts, .5);
+            }
+        }else{
+            if(Ghosts.size() - 1 != StartGhosts + AddGhosts){
+                clearGhosts();
+                addGhosts(StartGhosts + AddGhosts, 1);
+            }
+        }
+        draw();
     }
     
     public void propertyChanged(){
         ScoreString.set("Score: " + Score.get());
         LvlString.set("Level: " + Level.get());
         CakeString.set("Cakes Left: " + CakesLeft.get());
-        if(CakesLeft.get() == 0 && CakesPrev == 1){
+        if(Started && CakesLeft.get() == 0 && CakesPrev == 1){
             Win.set(1);
-            levelOver();
         }
         CakesPrev = CakesLeft.get();
     }
@@ -523,7 +572,10 @@ public class Board extends Region{
         CakesLeft.set(0);
         for(int i = 0; i < 20; i++){
             for(int j = 0; j < 20; j++){
-                if(i == 1 || i == 18 || j == 1 || j == 18){
+                if(i == 9 && j == 9){
+                    Board[i][j] = 1;
+                    Maze[i][j] = 1;
+                }else if(i == 1 || i == 18 || j == 1 || j == 18){
                     //end rows get dots
                     CakesLeft.set(CakesLeft.get() + 1);
                     Board[i][j] = 2;
@@ -563,8 +615,23 @@ public class Board extends Region{
                     Board[i][j] = 0;
                     Maze[i][j] = 0;
                 }
+                
             }
         }
     }
     
+    
+    public void setupLevelTwo(){
+        StartSound.play();
+        Started = false;
+        Win.set(0);
+        Dead.set(0);
+        Ghosts.clear();
+        resetBoard();
+        Level.set(2);
+        addGhosts(StartGhosts + AddGhosts, 1);
+        addPlayer();
+        draw();
+        Started = true;
+    }
 }

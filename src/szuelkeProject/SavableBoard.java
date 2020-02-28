@@ -18,11 +18,17 @@ public class SavableBoard implements Serializable{
     ArrayList<Ghost> Ghosts = new ArrayList<Ghost>();
     int Score;
     int Level;
+    int StartGhosts;
+    int AddGhosts;
+    int CakesLeft;
     
     public SavableBoard(Board board){
         this.Board = board.Board;
         this.Ghosts = board.Ghosts;
         this.Score = board.Score.get();
         this.Level = board.Level.get();
+        this.StartGhosts = board.StartGhosts;
+        this.AddGhosts = board.AddGhosts;
+        this.CakesLeft = board.CakesLeft.get();
     }
 }
